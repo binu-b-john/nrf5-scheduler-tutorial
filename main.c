@@ -49,6 +49,17 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
+//************added by b_john ***************//
+
+// *************adding sheduler header file ***********//
+#include "app_scheduler.h"
+
+// *************Scheduler settings added *************//
+#define SCHED_MAX_EVENT_DATA_SIZE   sizeof(nrf_drv_gpiote_pin_t)
+#define SCHED_QUEUE_SIZE            10
+
+//*************ends here b_john***********//
+
 
 APP_TIMER_DEF(m_led_a_timer_id);
 
@@ -93,6 +104,18 @@ static void button_handler(nrf_drv_gpiote_pin_t pin)
     }
 }
 
+//*************added by b_john***********//
+/**@brief Button handler function to be called by the scheduler.
+ */
+void button_scheduler_event_handler(void *p_event_data, uint16_t event_size)
+{
+    // In this case, p_event_data is a pointer to a nrf_drv_gpiote_pin_t that represents
+    // the pin number of the button pressed. The size is constant, so it is ignored.
+    button_handler(*((nrf_drv_gpiote_pin_t*)p_event_data));
+}
+
+//*************ends here b_john***********//
+
 
 /**@brief Button event handler.
  */
@@ -102,7 +125,11 @@ static void gpiote_event_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t
     // separate function as it makes it easier to demonstrate the scheduler with less modifications
     // to the code later in the tutorial.
 
-    button_handler(pin);
+//***********changes made by b_john***********//
+   // button_handler(pin);
+     app_sched_event_put(&pin, sizeof(pin), button_scheduler_event_handler);
+
+//**********changes end here b_john*******//
 }
 
 
@@ -201,6 +228,11 @@ static void log_init(void)
 }
 
 
+// ************* added by b_john********* //
+APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
+
+//**************ends here b_john***********//
+
 /**@brief Main function.
  */
 int main(void)
@@ -211,6 +243,13 @@ int main(void)
     timer_init();
 
     NRF_LOG_INFO("Scheduler tutorial example started.");
+
+      
+    // ************* added by b_john********* //
+    app_sched_execute();
+    // ************* ends here b_john********* //
+
+
 
     // Enter main loop.
     while (true)
